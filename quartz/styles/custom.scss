@@ -100,9 +100,31 @@ td {
   padding: 0.5rem 0.8rem;
 }
 
-/* 行の交互背景で、横方向に目線を追いやすくする（ゼブラストライプ） */
-tbody tr:nth-child(even) {
+/* 行の交互背景で、横方向に目線を追いやすくする（ゼブラストライプ）
+
+   ⚠️ `var(--highlight)` を使ってはいけない。
+   `@quartz-themes/core` が有効なため、configの色設定は上書きされており、
+   --highlight の実体は **rgba(255,208,0,0.4) という濃い黄色**（実測値）。
+   さらに `a.internal`（内部リンク）も同じ --highlight を背景に使うので、
+   ゼブラに使うと「黄色い行 × 黄色いリンク」で二重に濃くなり判読しにくくなる。
+   → テーマに依存しない中立的な半透明グレーを使う。 */
+body article tbody tr:nth-child(even) {
+  background-color: rgba(128, 128, 128, 0.07);
+}
+
+/* 内部リンクの黄色いチップを控えめにする
+   教科書1本に189個のリンクがあるため、既定の濃い黄色のままだと本文が読めない。
+   リンクだと分かる程度の淡さに落とし、下線で可読性を担保する。 */
+body article a.internal {
+  background-color: rgba(128, 128, 128, 0.1);
+  text-decoration: underline;
+  text-decoration-color: rgba(128, 128, 128, 0.45);
+  text-underline-offset: 0.15em;
+}
+
+body article a.internal:hover {
   background-color: var(--highlight);
+  text-decoration-color: var(--secondary);
 }
 
 /* --------------------------------------------------------------------------
@@ -175,12 +197,42 @@ body .toc-content.overflow {
   scrollbar-color: var(--lightgray) transparent;
 }
 
-/* 目次に、グラフビュー(250px固定)を除いた残りの高さを割り当てる */
+/* 右サイドバーの高さ配分（目次を最優先にする）
+
+   【実測で判明した問題・2026-08-02】
+   用語集140ファイルがすべて教科書へリンクしているため、**バックリンクが141件**に膨張し、
+   サイドバー1200px のうち 437px を占有していた。結果、目次(61項目)は287pxしか得られず、
+   ほとんど読めない状態になっていた（グラフ309px／目次287px／バックリンク437px）。
+
+   対処：グラフとバックリンクに上限を設け、余った高さをすべて目次に回す。 */
 @media all and #{$desktop} {
+  /* 目次：残り全部を取る（最優先） */
   body .sidebar.right > .toc {
     flex: 1 1 auto;
+    min-height: 12rem;   /* これ以下には潰させない */
+    overflow-y: hidden;
+  }
+
+  /* グラフ：ほぼ空なので縮める */
+  body .sidebar.right > .graph {
+    flex: 0 0 auto;
+  }
+  body .graph > .graph-outer {
+    height: 160px;
+  }
+
+  /* バックリンク：141件あっても場所を取りすぎないよう上限を設け、内部でスクロールさせる */
+  body .sidebar.right > .backlinks {
+    flex: 0 0 auto;
+    max-height: 11rem;
     min-height: 0;
     overflow-y: hidden;
+  }
+  body .backlinks > ul {
+    overflow-y: auto;
+    max-height: calc(11rem - 2rem);
+    scrollbar-width: thin;
+    scrollbar-color: var(--lightgray) transparent;
   }
 }
 
