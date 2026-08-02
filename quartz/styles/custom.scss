@@ -89,27 +89,85 @@ article {
   }
 }
 
-/* ヘッダー行を強調する */
-th {
-  padding: 0.6rem 0.8rem;
-  background-color: var(--lightgray);
-  font-weight: 600;
+/* 表の配色（ライト/ダーク両対応）
+
+   【2026-08-02 実測にもとづく設計】
+   ⚠️ `var(--highlight)` は使えない。`@quartz-themes/core` が config を上書きしており、
+      実体は rgba(255,208,0,0.4) の**濃い黄色**。リンク(a.internal)も同じ変数を使うため、
+      ゼブラに使うと「黄色い行×黄色いリンク」で二重に濃くなる。
+   ⚠️ かといって薄くしすぎてもいけない。一度 rgba(128,128,128,0.07) にしたところ、
+      ダークで **ヘッダ rgb(40,40,40) と 偶数行 rgb(35,35,35)** となり
+      **差がわずか5**でヘッダと行が見分けられなくなった（ユーザー指摘）。
+   → ヘッダ・ゼブラ・罫線の3つを、明度差が確実に出る値で個別に定義する。
+     背景色の微差だけに頼らず、**横罫線で行を区切る**のが可読性の主役。 */
+
+:root {
+  /* ライトモード（背景が明るいので黒を重ねる） */
+  --tbl-head: rgba(0, 0, 0, 0.075);
+  --tbl-zebra: rgba(0, 0, 0, 0.028);
+  --tbl-line: rgba(0, 0, 0, 0.16);
+  --tbl-line-strong: rgba(0, 0, 0, 0.34);
 }
 
-td {
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* ダークモード（背景が暗いので白を重ねる）
+       背景 rgb(28,28,28) に対し ヘッダ≈rgb(58,58,58) / ゼブラ≈rgb(36,36,36)
+       → 両者の差が約22あり、確実に見分けられる */
+    --tbl-head: rgba(255, 255, 255, 0.13);
+    --tbl-zebra: rgba(255, 255, 255, 0.035);
+    --tbl-line: rgba(255, 255, 255, 0.18);
+    --tbl-line-strong: rgba(255, 255, 255, 0.38);
+  }
+}
+
+/* テーマ切替ボタンで data-theme が付いたときは、そちらを優先させる */
+:root[data-theme="light"] {
+  --tbl-head: rgba(0, 0, 0, 0.075);
+  --tbl-zebra: rgba(0, 0, 0, 0.028);
+  --tbl-line: rgba(0, 0, 0, 0.16);
+  --tbl-line-strong: rgba(0, 0, 0, 0.34);
+}
+
+:root[data-theme="dark"] {
+  --tbl-head: rgba(255, 255, 255, 0.13);
+  --tbl-zebra: rgba(255, 255, 255, 0.035);
+  --tbl-line: rgba(255, 255, 255, 0.18);
+  --tbl-line-strong: rgba(255, 255, 255, 0.38);
+}
+
+/* ヘッダー行：本文の行より明確に濃く（薄く）して、見出しだと一目で分かるようにする */
+body article th {
+  padding: 0.6rem 0.8rem;
+  background-color: var(--tbl-head);
+  font-weight: 600;
+  border-bottom: 2px solid var(--tbl-line-strong);
+}
+
+body article td {
   padding: 0.5rem 0.8rem;
 }
 
-/* 行の交互背景で、横方向に目線を追いやすくする（ゼブラストライプ）
+/* ★可読性の主役：行を区切る横罫線
+   （既定では border-bottom が 0px になっており、行の境目が消えていた） */
+body article tbody tr {
+  border-bottom: 1px solid var(--tbl-line);
+}
 
-   ⚠️ `var(--highlight)` を使ってはいけない。
-   `@quartz-themes/core` が有効なため、configの色設定は上書きされており、
-   --highlight の実体は **rgba(255,208,0,0.4) という濃い黄色**（実測値）。
-   さらに `a.internal`（内部リンク）も同じ --highlight を背景に使うので、
-   ゼブラに使うと「黄色い行 × 黄色いリンク」で二重に濃くなり判読しにくくなる。
-   → テーマに依存しない中立的な半透明グレーを使う。 */
+body article tbody tr:last-child {
+  border-bottom: none;
+}
+
+/* ゼブラは補助。ヘッダと混同しない範囲の淡さに留める */
 body article tbody tr:nth-child(even) {
-  background-color: rgba(128, 128, 128, 0.07);
+  background-color: var(--tbl-zebra);
+}
+
+/* 縦罫線は控えめに（横罫線を主役にするため） */
+body article table th,
+body article table td {
+  border-left: none;
+  border-right: none;
 }
 
 /* 内部リンクの黄色いチップを控えめにする
