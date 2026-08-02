@@ -19,6 +19,6 @@ title: WPA3
 
 ## 関連
 
-[[IPsec]] ／ [[SSL/TLS]]
+[[IPsec]] ／ [[SSL-TLS|SSL/TLS]]
 
 教科書：[[11_セキュリティ]] の 8.1 節

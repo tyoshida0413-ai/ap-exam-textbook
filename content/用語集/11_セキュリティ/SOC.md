@@ -36,6 +36,6 @@ SOCは、ファイアウォールやサーバなど**各種機器のログを集
 
 ## 関連
 
-[[CSIRT]] ／ [[SIEM]] ／ [[JPCERT/CC]]
+[[CSIRT]] ／ [[SIEM]] ／ [[JPCERT-CC|JPCERT/CC]]
 
 教科書：[[11_セキュリティ]] の 5.4 節

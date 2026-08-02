@@ -26,6 +26,6 @@ title: CVE
 
 ## 関連
 
-[[CWE]] ／ [[CVSS]] ／ [[ISO/IEC 15408]]
+[[CWE]] ／ [[CVSS]] ／ [[ISO-IEC 15408|ISO/IEC 15408]]
 
 教科書：[[11_セキュリティ]] の 6.2 節
