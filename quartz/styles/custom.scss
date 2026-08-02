@@ -140,3 +140,107 @@ article details {
     margin-bottom: 0.8rem;
   }
 }
+
+/* --------------------------------------------------------------------------
+   6. 右サイドバー「目次」の修正
+
+   既定の実装には2つの問題がある。
+   (a) `.toc` に `overflow-y: hidden` が指定される一方、`.toc-content` に
+       スクロール指定がないため、収まりきらない見出しが**切り捨てられる**。
+       この教科書のように見出しが多いページで顕在化する。
+   (b) 折りたたみ時の高さが `flex: 0 1.4rem` に固定されている。
+       Noto Sans JP は欧文フォントより行の高さが大きいため、
+       「目次」の文字がこの高さに収まらず隠れてしまう。
+
+   ★重要★
+   このファイル(index-*.css)は、プラグインの component-*.css より**先に**
+   読み込まれる。同じ詳細度では既定側が後勝ちしてしまうため、
+   以下のルールは `body` を前置して詳細度を確実に上回らせている。
+   -------------------------------------------------------------------------- */
+
+/* (a) 目次の中身をスクロールできるようにする
+   既定は `max-height: calc(100% - 2rem)` だが、% 指定は親の高さ確定に依存して
+   不安定なため、flexbox 標準の `flex:1 1 auto` + `min-height:0` で高さを決める。
+   （min-height:0 がないと、flexアイテムは内容分まで縮まず溢れる） */
+body .toc-content.overflow {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+  /* 最下部の見出しが下端に貼り付かないよう余白を確保 */
+  padding-bottom: 1rem;
+
+  /* スクロールバーを細く、目立ちすぎないようにする */
+  scrollbar-width: thin;
+  scrollbar-color: var(--lightgray) transparent;
+}
+
+/* 目次に、グラフビュー(250px固定)を除いた残りの高さを割り当てる */
+@media all and #{$desktop} {
+  body .sidebar.right > .toc {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: hidden;
+  }
+}
+
+/* (b) 折りたたみ時に「目次」の文字が隠れないようにする
+
+   既定は「`flex: 0 1.4rem` に縮めて `overflow-y: hidden` で中身を切る」設計。
+   しかし 1.4rem は Noto Sans JP の行高に足りず、見出し自体が切れてしまう。
+
+   固定px値で調整すると font 変更のたびに破綻するため、
+   **中身を display:none で流し込みから外し、高さは見出しに合わせて自動**にする。
+   これならフォントが変わっても常に見出しがちょうど収まる。 */
+body .toc:has(button.toc-header.collapsed) {
+  flex: 0 0 auto;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  overflow-y: hidden;
+
+  & .toc-content {
+    display: none;
+  }
+}
+
+body .toc-header {
+  /* ヘッダーが押しつぶされないよう固定する */
+  flex: 0 0 auto;
+  min-height: 1.8rem;
+  padding: 0.2rem 0;
+
+  & h3 {
+    line-height: 1.6;
+  }
+}
+
+/* 目次の項目が薄すぎて読めないため、既定の opacity 0.35 を引き上げる
+   （現在表示中の見出しは .in-view でさらに強調される） */
+body .toc-content.overflow > li > a {
+  opacity: 0.65;
+  line-height: 1.6;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  &.in-view {
+    opacity: 1;
+    font-weight: 600;
+  }
+}
+
+/* 左サイドバーのエクスプローラーも、ファイルが増えたとき同じ問題が起きるため
+   あらかじめスクロールできるようにしておく */
+@media all and #{$desktop} {
+  body .explorer {
+    min-height: 0;
+  }
+
+  body .explorer-content {
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--lightgray) transparent;
+  }
+}
