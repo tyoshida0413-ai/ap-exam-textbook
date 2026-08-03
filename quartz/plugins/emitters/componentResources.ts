@@ -6,9 +6,17 @@ import { QuartzEmitterPlugin } from "../types"
 import spaRouterScript from "../../components/scripts/spa.inline"
 // @ts-ignore
 import popoverScript from "../../components/scripts/popover.inline"
+// @ts-ignore
+import sidePanelScript from "../../components/scripts/sidepanel.inline"
+// @ts-ignore
+import sidebarToggleScript from "../../components/scripts/sidebar-toggle.inline"
 import baseStyles from "../../styles/base.scss"
 import customStyles from "../../styles/custom.scss"
 import popoverStyle from "../../components/styles/popover.scss"
+// sidepanel.scss / sidebar-toggle.scss はここでは読み込まない。
+// componentResources.css 経由だと @layer quartz-base の内側かつ base.scss より前に
+// 置かれてしまい、レイアウト系の指定が base.scss に負ける。
+// 代わりに custom.scss から @use しており、layer の外（unlayered）で適用される。
 import { BuildCtx } from "../../util/ctx"
 import { QuartzComponent } from "../../components/types"
 import { normalizeResource } from "../../util/resources"
@@ -89,6 +97,12 @@ function addGlobalPageResources(ctx: BuildCtx, componentResources: ComponentReso
     componentResources.afterDOMLoaded.push(popoverScript)
     componentResources.css.push(popoverStyle)
   }
+
+  // 用語サイドパネル（本文中のリンクを右パネルで開く）と、
+  // それと組で使う左サイドバーの開閉トグル。スクリプトのみここで注入する。
+  // CSSは custom.scss 側から @use している（上のimport箇所のコメント参照・引き継ぎ 2.9章）
+  componentResources.afterDOMLoaded.push(sidePanelScript)
+  componentResources.afterDOMLoaded.push(sidebarToggleScript)
 
   if (cfg.analytics?.provider === "google") {
     const tagId = cfg.analytics.tagId

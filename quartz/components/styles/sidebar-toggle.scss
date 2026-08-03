@@ -1,0 +1,85 @@
+@use "../../styles/variables.scss" as *;
+
+/* 左サイドバー（エクスプローラー）の開閉トグル
+   --------------------------------------------------------------------------
+   幅の計算は custom.scss セクション1 のCSS変数に集約してある。
+   ここは `--left-col-width` を 0 にするだけでよく、
+   グリッド幅と全体の横幅上限は custom.scss 側が自動で追従する。
+   -------------------------------------------------------------------------- */
+
+#sidebar-toggle {
+  position: fixed;
+  top: 1rem;
+  left: 0.6rem;
+  z-index: 102;
+
+  display: none; // desktop のみ表示（下の media query で有効化）
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+
+  width: 2rem;
+  height: 2rem;
+  padding: 0.4rem;
+  box-sizing: border-box;
+
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: var(--lightgray);
+  }
+
+  & .sidebar-toggle-bar {
+    display: block;
+    width: 100%;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--darkgray);
+    transition: background 0.15s ease;
+  }
+
+  &:hover .sidebar-toggle-bar {
+    background: var(--dark);
+  }
+}
+
+@media all and #{$desktop} {
+  #sidebar-toggle {
+    display: flex;
+  }
+
+  // 畳んだ状態：左カラムを0幅にする。中央カラムがその分広がる
+  body.sidebar-left-collapsed {
+    --left-col-width: 0px;
+  }
+
+  /* ⚠️ ここで `display: none` を使ってはいけない（2026-08-03 実測で判明）。
+     `.center` は grid-area の指定を持たない【自動配置】のグリッドアイテムで、
+     左サイドバーを display:none にするとグリッドから消え、自動配置がひとつ手前にずれて
+     `.center` が0px幅の1列目に入り、本文が48pxに潰れる。
+     グリッドアイテムとしては残したまま、幅0＋visibility:hidden で見えなくする。
+     visibility:hidden なら中のリンクもクリック・フォーカスできない。
+
+     セレクタに div#quartz-body を挟んでいるのは、@quartz-themes/core の
+     `.page > #quartz-body div.sidebar.left { padding-left: 2rem }`（id込み）に
+     詳細度で勝つため（引き継ぎ 罠#13）。 */
+  body.sidebar-left-collapsed div#quartz-body div.sidebar.left {
+    visibility: hidden;
+    width: 0;
+    min-width: 0;
+    max-width: 0;
+    padding: 0;
+    border: none;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  // 畳むと本文がトグルボタンの真下に来るので、頭がボタンに隠れないよう逃がす
+  body.sidebar-left-collapsed .page-header {
+    padding-left: 2.6rem;
+  }
+}

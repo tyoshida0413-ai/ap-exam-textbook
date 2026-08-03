@@ -1,0 +1,151 @@
+@use "../../styles/variables.scss" as *;
+
+/* 用語サイドパネル
+   --------------------------------------------------------------------------
+   オーバーレイではなく、グリッドの右カラムとして配置する。
+   本文を覆わないので「教科書を読みながら用語を引く」が成立する。
+
+   幅の計算は custom.scss セクション1 のCSS変数に集約してある。
+   ここは開いたときに --right-col-width を広げるだけでよく、
+   グリッド列幅と全体の横幅上限は custom.scss 側が自動で追従する。
+   -------------------------------------------------------------------------- */
+
+#term-panel {
+  display: none; // 閉じている間は存在しないものとして扱う
+  grid-area: grid-sidebar-right;
+}
+
+@media all and #{$desktop} {
+  // 開いた状態：右カラムを 280px → 480px に広げ、その枠をパネルが使う
+  body.term-panel-open {
+    --right-col-width: 480px;
+  }
+
+  body.term-panel-open #term-panel {
+    display: flex;
+    flex-direction: column;
+
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    box-sizing: border-box;
+
+    padding: 1.2rem 0 0 1.2rem;
+    border-left: 1px solid var(--lightgray);
+    overflow: hidden; // スクロールは中身(.term-panel-body)側が持つ
+  }
+
+  // パネルを開いている間は本来の右サイドバー（グラフ・目次・バックリンク）を隠す。
+  // 枠をパネルへ明け渡すため
+  body.term-panel-open .sidebar.right {
+    display: none;
+  }
+}
+
+/* 800px未満ではスクリプト側で無効化しているが、
+   念のためCSSでも出さないようにしておく */
+@media all and ($mobile) {
+  #term-panel {
+    display: none !important;
+  }
+}
+
+.term-panel-header {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+
+  padding-bottom: 0.6rem;
+  margin-bottom: 0.6rem;
+  border-bottom: 1px solid var(--lightgray);
+}
+
+.term-panel-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--dark);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+
+  &:hover {
+    color: var(--secondary);
+    text-decoration: underline;
+  }
+}
+
+.term-panel-close {
+  flex: none;
+  appearance: none;
+  border: none;
+  background: none;
+  cursor: pointer;
+
+  font-size: 1.4rem;
+  line-height: 1;
+  padding: 0 0.3rem;
+  border-radius: 4px;
+  color: var(--gray);
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+
+  &:hover {
+    color: var(--dark);
+    background: var(--lightgray);
+  }
+}
+
+.term-panel-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  // パネル端まで来たときに本文側へスクロールが連鎖しないようにする
+  // （教科書の読んでいた位置が勝手に動かないため。独立動作の要件に必要）
+  overscroll-behavior: contain;
+
+  padding-right: 1rem;
+  padding-bottom: 3rem;
+
+  scrollbar-width: thin;
+  scrollbar-color: var(--lightgray) transparent;
+
+  // パネル内は本文より一回り小さくして、教科書側と視覚的に区別する
+  font-size: 0.92rem;
+
+  & h1 {
+    font-size: 1.2rem;
+  }
+  & h2 {
+    font-size: 1.05rem;
+    margin-top: 1.4rem;
+  }
+  & h3 {
+    font-size: 0.98rem;
+    margin-top: 1.1rem;
+  }
+
+  // 用語ページは表（混同しやすい語）が主役。狭い幅でも潰れないよう横スクロールを許す
+  & .table-container {
+    overflow-x: auto;
+  }
+
+  & table {
+    font-size: 0.86rem;
+  }
+
+  // 用語ページは本文が `# 用語名` で始まるため、パネルのヘッダーとタイトルが重複する。
+  // ヘッダー側を正としてここでは出さない。
+  // h1 は article の直下ではなく div.markdown-preview-view の中にあるため、
+  // 子セレクタ(>)ではなく子孫セレクタで拾う（2026-08-03 実測で確認）
+  & article h1:first-of-type {
+    display: none;
+  }
+}
+
+.term-panel-message {
+  color: var(--gray);
+  font-size: 0.9rem;
+}

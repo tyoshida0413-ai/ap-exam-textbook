@@ -1,5 +1,14 @@
 @use "./variables.scss" as *;
 
+/* ⚠️ 用語サイドパネルと左サイドバートグルのCSSは、必ずここから @use で読み込む。
+   componentResources.css に渡してはいけない（2026-08-03 実測で判明）。
+   componentResources.css へ渡したCSSは `@layer quartz-base` の【内側】に、しかも
+   base.scss より【前】に置かれるため、base.scss の `.sidebar { display: flex }` 等に負ける。
+   custom.scss の出力だけが layer の外（unlayered）に置かれ、レイヤー内の全ルールに勝つ。
+   詳細は 00_引き継ぎ.md 罠#15 を参照。 */
+@use "../components/styles/sidepanel.scss";
+@use "../components/styles/sidebar-toggle.scss";
+
 /* ==========================================================================
    日本語・表中心のコンテンツ向けカスタマイズ
    ========================================================================== */
@@ -21,17 +30,39 @@
    サイドバーは既定の320pxから280pxへ絞ったまま（この指定自体は変更前から維持）、
    グリッドgap10pxを差し引いた中央カラムが最大1400pxになるよう、
    #quartz-body自体の上限を 1400 + 280*2 + 10 = 1970px にする。
-   -------------------------------------------------------------------------- */
-$sidePanelWidthNarrow: 280px;
 
+   【2026-08-03 追記】左右カラム幅をCSS変数に切り出した。
+   左サイドバーの開閉（sidebar-toggle.scss）と用語サイドパネル（sidepanel.scss）が
+   この変数を上書きするだけで、グリッド幅と全体の上限が自動で追従する。
+   変数は body に置き、上書き側は `body.クラス名`（詳細度0,2,0）で勝たせる。
+   -------------------------------------------------------------------------- */
 @media all and #{$desktop} {
-  .page > #quartz-body {
-    grid-template-columns: #{$sidePanelWidthNarrow} auto #{$sidePanelWidthNarrow};
+  body {
+    --left-col-width: 280px;
+    --right-col-width: 280px;
+    --content-max-width: 1400px;
+    --grid-col-gap: 10px;
   }
 
   body div#quartz-root.page div#quartz-body {
-    width: min(100%, calc(1400px + #{$sidePanelWidthNarrow} * 2 + 10px));
-    max-width: min(100%, calc(1400px + #{$sidePanelWidthNarrow} * 2 + 10px));
+    grid-template-columns: var(--left-col-width) auto var(--right-col-width);
+
+    // 中央カラムが --content-max-width に届くまで全体を広げる。
+    // 画面幅が足りないときは min(100%, ...) 側が効いて中央カラムが縮む。
+    width: min(
+      100%,
+      calc(
+        var(--content-max-width) + var(--left-col-width) + var(--right-col-width) +
+          var(--grid-col-gap)
+      )
+    );
+    max-width: min(
+      100%,
+      calc(
+        var(--content-max-width) + var(--left-col-width) + var(--right-col-width) +
+          var(--grid-col-gap)
+      )
+    );
   }
 }
 
@@ -370,26 +401,7 @@ body .toc-content.overflow > li > a {
   }
 }
 
-/* --------------------------------------------------------------------------
-   4. Stacked Pages（左右の帯＝バインダー）とサイドバーの重なり対策
-
-   【2026-08-03 CDP実測で判明】
-   #stacked-pages-container.binder-active は position:fixed; inset:0 の
-   全画面オーバーレイで、左右端に幅40pxの帯（.binder-strip）を出す。
-   プラグイン本来の設計は `body.has-binder-left .page { padding-left:40px }` で
-   本文を退避させるが、@quartz-themes/core が
-   `div#quartz-root.page { padding:0 }`（id込みの詳細度）で強制上書きしており、
-   常に効かない（TODO-1のmax-width問題と同じ原因）。
-   その結果、幅1970px以下（#quartz-bodyが画面幅いっぱいになる範囲＝
-   1440pxや1920pxなど一般的な解像度を含む）では、帯が左サイドバー
-   （エクスプローラー）の文字にそのまま重なって読めなくなっていた。
-   .page 側の詳細度勝負を避け、帯の分だけサイドバー自身の内側に
-   余白を作ることで退避させる。
-   -------------------------------------------------------------------------- */
-body.has-binder-left .sidebar.left {
-  padding-left: calc(2rem + 40px);
-}
-
-body.has-binder-right .sidebar.right {
-  padding-right: calc(2rem + 40px);
-}
+/* 2026-08-03: 旧セクション4（Stacked Pagesのバインダー帯とサイドバーの重なり対策）は削除した。
+   stacked-pages プラグイン自体を無効化したため、対象のDOMが存在しなくなり不要になったもの。
+   経緯は 00_引き継ぎ.md の 2.8章訂正部分を参照。
+   用語サイドパネルのスタイルは components/styles/sidepanel.scss にある。 */

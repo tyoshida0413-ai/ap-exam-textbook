@@ -132,17 +132,17 @@ plugins:
       passwordField: password
       unlistWhenEncrypted: false
       outputPath: static/encryptedContentIndex.json
+  # 2026-08-03: 無効化した。
+  # このプラグインは名前に反して「訪問履歴を縦タブで積み上げる」だけで、
+  # 「リンク先を並べて表示する」機能は実装されていない（docs の説明と実装が不一致）。
+  # 要望（教科書を読みながら用語を右に表示する）は自作の用語サイドパネルで実現している。
+  # 詳細は 00_引き継ぎ.md の 2.8章訂正部分 と 2.9章 を参照。
   - source: "@quartz-community/stacked-pages"
-    enabled: true
+    enabled: false
     layout:
       position: afterBody
       priority: 50
       display: all
-    options:
-      maxTabs: 8
-      mobileBreakpoint: 800
-      showSpines: true
-      animateTransitions: true
   - source: "@quartz-community/alias-redirects"
     enabled: true
   - source: "@quartz-community/content-index"
