@@ -133,11 +133,16 @@ plugins:
       unlistWhenEncrypted: false
       outputPath: static/encryptedContentIndex.json
   - source: "@quartz-community/stacked-pages"
-    enabled: false
+    enabled: true
     layout:
       position: afterBody
       priority: 50
       display: all
+    options:
+      maxTabs: 8
+      mobileBreakpoint: 800
+      showSpines: true
+      animateTransitions: true
   - source: "@quartz-community/alias-redirects"
     enabled: true
   - source: "@quartz-community/content-index"

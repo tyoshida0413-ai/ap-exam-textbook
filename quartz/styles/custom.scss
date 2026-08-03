@@ -5,18 +5,33 @@
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   1. 本文の横幅を広げる
-   既定では .page が 1500px、左右サイドバーが各320pxのため
-   中央カラムが約850pxしかなく、4〜5列の比較表が窮屈になる。
-   ページ全体を広げつつサイドバーを絞り、中央を約1300pxまで拡張する。
+   1. 本文の横幅を広げる（画面幅に応じて可変・上限1400px）
+
+   【2026-08-03 CDP実測で判明した本当の原因】
+   このセクションはかつて `.page { max-width: 1920px }` だけを指定していたが、
+   実際には一度も効いていなかった。@quartz-themes/core が
+   `div#quartz-root.page div#quartz-body { max-width: min(100%, 1500px) }`
+   （id2つ分の詳細度・レイヤーなし＝unlayered）を「reader-modeのworkaround」として
+   注入しており、こちらが本文幅の実質的な上限になっていた。
+   `.page` 自体は同テーマの `max-width: 100dvw` で常に画面幅いっぱいに広がる
+   centering用のラッパーに変えられているため、`.page`側をいくら広げても無意味だった。
+
+   対処：本当の上限を持つ `#quartz-body` 側を、同等以上の詳細度で上書きする
+   （罠#6と同じ「bodyを前置して詳細度を上げる」パターン）。
+   サイドバーは既定の320pxから280pxへ絞ったまま（この指定自体は変更前から維持）、
+   グリッドgap10pxを差し引いた中央カラムが最大1400pxになるよう、
+   #quartz-body自体の上限を 1400 + 280*2 + 10 = 1970px にする。
    -------------------------------------------------------------------------- */
-.page {
-  max-width: 1920px;
-}
+$sidePanelWidthNarrow: 280px;
 
 @media all and #{$desktop} {
   .page > #quartz-body {
-    grid-template-columns: 280px auto 280px;
+    grid-template-columns: #{$sidePanelWidthNarrow} auto #{$sidePanelWidthNarrow};
+  }
+
+  body div#quartz-root.page div#quartz-body {
+    width: min(100%, calc(1400px + #{$sidePanelWidthNarrow} * 2 + 10px));
+    max-width: min(100%, calc(1400px + #{$sidePanelWidthNarrow} * 2 + 10px));
   }
 }
 
@@ -353,4 +368,28 @@ body .toc-content.overflow > li > a {
     scrollbar-width: thin;
     scrollbar-color: var(--lightgray) transparent;
   }
+}
+
+/* --------------------------------------------------------------------------
+   4. Stacked Pages（左右の帯＝バインダー）とサイドバーの重なり対策
+
+   【2026-08-03 CDP実測で判明】
+   #stacked-pages-container.binder-active は position:fixed; inset:0 の
+   全画面オーバーレイで、左右端に幅40pxの帯（.binder-strip）を出す。
+   プラグイン本来の設計は `body.has-binder-left .page { padding-left:40px }` で
+   本文を退避させるが、@quartz-themes/core が
+   `div#quartz-root.page { padding:0 }`（id込みの詳細度）で強制上書きしており、
+   常に効かない（TODO-1のmax-width問題と同じ原因）。
+   その結果、幅1970px以下（#quartz-bodyが画面幅いっぱいになる範囲＝
+   1440pxや1920pxなど一般的な解像度を含む）では、帯が左サイドバー
+   （エクスプローラー）の文字にそのまま重なって読めなくなっていた。
+   .page 側の詳細度勝負を避け、帯の分だけサイドバー自身の内側に
+   余白を作ることで退避させる。
+   -------------------------------------------------------------------------- */
+body.has-binder-left .sidebar.left {
+  padding-left: calc(2rem + 40px);
+}
+
+body.has-binder-right .sidebar.right {
+  padding-right: calc(2rem + 40px);
 }
