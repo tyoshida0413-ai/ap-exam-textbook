@@ -5,6 +5,72 @@ import { googleFontHref, googleFontSubsetHref } from "../util/theme"
 import { QuartzComponent, QuartzComponentConstructor, QuartzComponentProps } from "./types"
 import { unescapeHTML } from "../util/escape"
 
+// メインCSS(index-*.css)が空シートで読み込まれた場合に、キャッシュを回避して読み直す。
+// Safariでこの1ファイルだけ取得に失敗し、失敗レスポンスがキャッシュされて
+// リロードしても直らない事象が実機で確認されたため（2026-08-05, 罠#31）。
+// data-persist を付けてSPA遷移では再実行しない。
+const cssGuardScript = `
+(function () {
+  var MAX = 3, tries = 0, lastTry = 0, settled = false
+  function findLink() {
+    var links = document.querySelectorAll('link[rel="stylesheet"]')
+    for (var i = 0; i < links.length; i++) {
+      if (/\\/index-[^/]*\\.css/.test(links[i].href)) return links[i]
+    }
+    return null
+  }
+  // 「ファイルが取れたか」ではなく「CSSが実際に効いているか」で判定する。
+  // 取得失敗の現れ方は環境依存（Safari実機=cssRulesが0件 / Chrome遮断=SecurityError）で
+  // 一定しないため、適用結果そのものを見る。
+  // 判定に使うのは custom.scss 冒頭の目印 --main-css-loaded だけ。
+  // 画面幅やレイアウトに依存する値を使うと、スマホ幅で誤発火する（2026-08-05 実測）。
+  function isLoaded(l) {
+    var root = document.documentElement
+    if (getComputedStyle(root).getPropertyValue("--main-css-loaded").trim() !== "") return true
+    try { return !!(l.sheet && l.sheet.cssRules && l.sheet.cssRules.length > 0) }
+    catch (e) { return false }
+  }
+  function record(status, href) {
+    try {
+      var log = JSON.parse(localStorage.getItem("cssGuardLog") || "[]")
+      log.unshift({ t: new Date().toISOString(), status: status, href: href, w: window.innerWidth })
+      localStorage.setItem("cssGuardLog", JSON.stringify(log.slice(0, 20)))
+    } catch (e) {}
+  }
+  function check() {
+    if (settled) return
+    var link = findLink()
+    if (!link) return
+    if (isLoaded(link)) {
+      if (tries > 0) { settled = true; record("recovered", link.href) }
+      return
+    }
+    var now = Date.now()
+    if (tries >= MAX) { settled = true; record("failed", link.href); return }
+    if (now - lastTry < 1200) return
+    tries++; lastTry = now
+    var base = link.getAttribute("href").split("?")[0]
+    var fresh = document.createElement("link")
+    fresh.rel = "stylesheet"
+    fresh.type = "text/css"
+    fresh.setAttribute("data-persist", "true")
+    fresh.href = base + "?cssguard=" + now
+    fresh.addEventListener("load", check)
+    fresh.addEventListener("error", check)
+    link.parentNode.insertBefore(fresh, link.nextSibling)
+    link.parentNode.removeChild(link)
+    record("retry" + tries, fresh.href)
+    setTimeout(check, 1500)
+  }
+  var first = findLink()
+  if (first) { first.addEventListener("load", check); first.addEventListener("error", check) }
+  document.addEventListener("DOMContentLoaded", check)
+  window.addEventListener("load", check)
+  setTimeout(check, 2000)
+  setTimeout(check, 6000)
+})()
+`
+
 export default (() => {
   const Head: QuartzComponent = ({
     cfg,
@@ -94,6 +160,7 @@ export default (() => {
         <meta name="generator" content="Quartz" />
 
         {css.map((resource) => CSSResourceToStyleElement(resource, true))}
+        <script data-persist="true" dangerouslySetInnerHTML={{ __html: cssGuardScript }} />
         {js
           .filter((resource) => resource.loadTime === "beforeDOMReady")
           .map((res) => JSResourceToScriptElement(res, true))}
