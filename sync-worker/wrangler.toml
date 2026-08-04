@@ -1,0 +1,12 @@
+# 付箋同期Worker の設定。
+# ⚠️ このWorkerは他のアプリのデプロイ運用とは独立している。
+#    既存のCloudflareプロジェクトの設定には一切影響しない（名前もKVも専用のものを使う）。
+name = "ap-bookmarks-sync"
+main = "worker.js"
+compatibility_date = "2026-08-01"
+
+# KV namespace。id は `wrangler kv namespace create BOOKMARKS` で発行された値に置き換える。
+# ダッシュボードで作る場合は Workers & Pages → KV → Create で作り、その ID を貼る。
+[[kv_namespaces]]
+binding = "BOOKMARKS"
+id = "ここに KV namespace の ID を貼る"

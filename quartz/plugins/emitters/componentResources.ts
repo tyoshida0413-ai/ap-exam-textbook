@@ -10,10 +10,12 @@ import popoverScript from "../../components/scripts/popover.inline"
 import sidePanelScript from "../../components/scripts/sidepanel.inline"
 // @ts-ignore
 import sidebarToggleScript from "../../components/scripts/sidebar-toggle.inline"
+// @ts-ignore
+import bookmarkScript from "../../components/scripts/bookmark.inline"
 import baseStyles from "../../styles/base.scss"
 import customStyles from "../../styles/custom.scss"
 import popoverStyle from "../../components/styles/popover.scss"
-// sidepanel.scss / sidebar-toggle.scss はここでは読み込まない。
+// sidepanel.scss / sidebar-toggle.scss / bookmark.scss はここでは読み込まない。
 // componentResources.css 経由だと @layer quartz-base の内側かつ base.scss より前に
 // 置かれてしまい、レイアウト系の指定が base.scss に負ける。
 // 代わりに custom.scss から @use しており、layer の外（unlayered）で適用される。
@@ -103,6 +105,10 @@ function addGlobalPageResources(ctx: BuildCtx, componentResources: ComponentReso
   // CSSは custom.scss 側から @use している（上のimport箇所のコメント参照・引き継ぎ 2.9章）
   componentResources.afterDOMLoaded.push(sidePanelScript)
   componentResources.afterDOMLoaded.push(sidebarToggleScript)
+
+  // 付箋（しおり）。教科書が長大なため、読んでいた位置に戻れるようにする。
+  // CSSは同じ理由で custom.scss 側から @use している
+  componentResources.afterDOMLoaded.push(bookmarkScript)
 
   if (cfg.analytics?.provider === "google") {
     const tagId = cfg.analytics.tagId

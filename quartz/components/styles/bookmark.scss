@@ -1,0 +1,562 @@
+@use "../../styles/variables.scss" as *;
+
+/* 付箋（しおり）機能
+   --------------------------------------------------------------------------
+   右下のボタン2つ（一覧・付箋を貼る）、右からスライドする一覧パネル、
+   本文上部の「続きから読む」バナー、操作結果のトーストのスタイル。
+
+   ⚠️ このファイルは componentResources.css へ渡してはいけない。
+      custom.scss から @use すること（引き継ぎ 罠#15。sidepanel.scss と同じ理由で、
+      componentResources 経由だと @layer quartz-base の内側に入り base.scss に負ける）
+   -------------------------------------------------------------------------- */
+
+$fab-size: 2.9rem;
+
+/* --------------------------------------------------------------------------
+   右下のフローティングボタン
+   -------------------------------------------------------------------------- */
+
+#bookmark-fab {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 103;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  // 用語サイドパネルを開いている間は、その上に重ならないよう左へ逃がす。
+  // 幅は custom.scss セクション1 の --right-col-width に追従する
+  transition: right 0.2s ease;
+}
+
+@media all and #{$desktop} {
+  body.term-panel-open #bookmark-fab {
+    right: calc(var(--right-col-width) + 1.2rem);
+  }
+}
+
+.bookmark-fab-button {
+  position: relative;
+  appearance: none;
+  cursor: pointer;
+
+  width: $fab-size;
+  height: $fab-size;
+  padding: 0.7rem;
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid var(--lightgray);
+  border-radius: 50%;
+  background: var(--light);
+  color: var(--darkgray);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+
+  & svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  &:hover {
+    color: var(--secondary);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+  }
+}
+
+/* 付箋を貼るボタン：このページに付箋があるときは塗りつぶして状態を示す */
+.bookmark-fab-add.active {
+  color: var(--secondary);
+
+  & svg {
+    fill: var(--secondary);
+  }
+}
+
+/* 一覧ボタンの右上に付く件数バッジ */
+.bookmark-count {
+  display: none;
+  position: absolute;
+  top: -0.15rem;
+  right: -0.15rem;
+
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 0.2rem;
+  box-sizing: border-box;
+
+  border-radius: 999px;
+  background: var(--secondary);
+  color: var(--light);
+
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.1rem;
+  text-align: center;
+
+  &.visible {
+    display: block;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   付箋一覧のパネル（右からスライドイン）
+   -------------------------------------------------------------------------- */
+
+#bookmark-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 104;
+
+  background: rgba(0, 0, 0, 0.28);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease;
+}
+
+body.bookmark-list-open #bookmark-overlay {
+  opacity: 1;
+  visibility: visible;
+}
+
+#bookmark-list {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 105;
+
+  width: min(22rem, 88vw);
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+
+  background: var(--light);
+  border-left: 1px solid var(--lightgray);
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.16);
+
+  transform: translateX(100%);
+  visibility: hidden;
+  transition:
+    transform 0.22s ease,
+    visibility 0.22s ease;
+}
+
+body.bookmark-list-open #bookmark-list {
+  transform: translateX(0);
+  visibility: visible;
+}
+
+.bookmark-list-header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+
+  padding: 1rem 1rem 0.7rem 1.2rem;
+  border-bottom: 1px solid var(--lightgray);
+
+  & h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.4;
+    color: var(--dark);
+  }
+}
+
+.bookmark-list-close {
+  flex: none;
+  appearance: none;
+  border: none;
+  background: none;
+  cursor: pointer;
+
+  font-size: 1.4rem;
+  line-height: 1;
+  padding: 0 0.3rem;
+  border-radius: 4px;
+  color: var(--gray);
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+
+  &:hover {
+    color: var(--dark);
+    background: var(--lightgray);
+  }
+}
+
+.bookmark-list-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  // 端まで来たときに本文側へスクロールが連鎖しないようにする
+  overscroll-behavior: contain;
+
+  padding: 0.5rem 0.6rem 2rem;
+
+  scrollbar-width: thin;
+  scrollbar-color: var(--lightgray) transparent;
+}
+
+.bookmark-empty {
+  padding: 1.5rem 0.8rem;
+  color: var(--gray);
+  font-size: 0.88rem;
+  line-height: 1.8;
+}
+
+.bookmark-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.2rem;
+
+  border-radius: 6px;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: var(--lightgray);
+  }
+
+  // 今開いているページの付箋は左に線を入れて区別する
+  &.current {
+    box-shadow: inset 3px 0 0 var(--secondary);
+  }
+}
+
+.bookmark-item-link {
+  flex: 1;
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+
+  padding: 0.6rem 0.3rem 0.6rem 0.7rem;
+  text-decoration: none;
+  color: inherit;
+  background: none; // 内部リンクの黄色いチップ(custom.scss)を持ち込ませない
+}
+
+.bookmark-item-title {
+  font-size: 0.78rem;
+  color: var(--gray);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bookmark-item-heading {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--dark);
+
+  // 見出しが長いので2行で打ち切る
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.bookmark-item-when {
+  font-size: 0.72rem;
+  color: var(--gray);
+}
+
+.bookmark-item-remove {
+  flex: none;
+  appearance: none;
+  border: none;
+  background: none;
+  cursor: pointer;
+
+  margin-top: 0.45rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+
+  font-size: 1.05rem;
+  line-height: 1;
+  color: var(--gray);
+  opacity: 0;
+  transition:
+    color 0.15s ease,
+    opacity 0.15s ease;
+
+  &:hover {
+    color: var(--dark);
+  }
+}
+
+// マウスの無い端末ではホバーできないので、削除ボタンを常に出す
+.bookmark-item:hover .bookmark-item-remove,
+.bookmark-item:focus-within .bookmark-item-remove {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .bookmark-item-remove {
+    opacity: 1;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   同期の設定（一覧パネルの下部）
+   -------------------------------------------------------------------------- */
+
+.bookmark-sync {
+  flex: none;
+  border-top: 1px solid var(--lightgray);
+  padding: 0.4rem 0.6rem 0.8rem;
+}
+
+.bookmark-sync-toggle {
+  width: 100%;
+  appearance: none;
+  border: none;
+  background: none;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+
+  padding: 0.5rem 0.4rem;
+  border-radius: 5px;
+
+  font-size: 0.82rem;
+  color: var(--darkgray);
+  text-align: left;
+
+  &:hover {
+    background: var(--lightgray);
+  }
+}
+
+.bookmark-sync-status {
+  font-size: 0.72rem;
+  color: var(--gray);
+  white-space: nowrap;
+
+  // 同期できていないことは黙って隠さず、色で気づけるようにする
+  &.is-error {
+    color: #d05050;
+  }
+
+  &.is-ok {
+    color: var(--secondary);
+  }
+}
+
+.bookmark-sync-form {
+  padding: 0.3rem 0.4rem 0;
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+.bookmark-sync-help {
+  margin: 0 0 0.7rem;
+  font-size: 0.74rem;
+  line-height: 1.7;
+  color: var(--gray);
+}
+
+.bookmark-sync-field {
+  display: block;
+  margin-bottom: 0.6rem;
+
+  & > span {
+    display: block;
+    margin-bottom: 0.2rem;
+    font-size: 0.72rem;
+    color: var(--gray);
+  }
+
+  & input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.4rem 0.5rem;
+
+    border: 1px solid var(--lightgray);
+    border-radius: 5px;
+    background: var(--light);
+    color: var(--dark);
+
+    // iOSは16px未満の入力欄にフォーカスすると画面を勝手に拡大する。
+    // iPadで設定するので16pxを下回らせない
+    font-size: 16px;
+    font-family: inherit;
+
+    &:focus {
+      outline: 2px solid var(--secondary);
+      outline-offset: -1px;
+    }
+  }
+}
+
+.bookmark-sync-actions {
+  display: flex;
+  gap: 0.4rem;
+
+  & button {
+    appearance: none;
+    cursor: pointer;
+    padding: 0.4rem 0.7rem;
+    border-radius: 5px;
+    border: 1px solid var(--lightgray);
+    background: var(--light);
+    color: var(--darkgray);
+    font-size: 0.78rem;
+    font-family: inherit;
+
+    &:hover {
+      background: var(--lightgray);
+      color: var(--dark);
+    }
+  }
+
+  & .bookmark-sync-save {
+    border-color: var(--secondary);
+    color: var(--secondary);
+    font-weight: 600;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   「前回の続きから読む」バナー（本文の一番上）
+   -------------------------------------------------------------------------- */
+
+#bookmark-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+
+  margin: 0.5rem 0 1.6rem;
+  padding: 0.2rem 0.5rem 0.2rem 0.2rem;
+
+  border: 1px solid var(--lightgray);
+  border-left: 3px solid var(--secondary);
+  border-radius: 6px;
+  background: var(--lightgray);
+}
+
+.bookmark-banner-jump {
+  flex: 1;
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  appearance: none;
+  border: none;
+  background: none;
+  cursor: pointer;
+
+  padding: 0.55rem 0.5rem;
+  text-align: left;
+
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--dark);
+
+  &:hover {
+    color: var(--secondary);
+    text-decoration: underline;
+  }
+}
+
+.bookmark-banner-icon {
+  flex: none;
+  display: flex;
+  width: 1.05rem;
+  height: 1.05rem;
+  color: var(--secondary);
+
+  & svg {
+    width: 100%;
+    height: 100%;
+    fill: var(--secondary);
+  }
+}
+
+.bookmark-banner-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bookmark-banner-dismiss {
+  flex: none;
+  appearance: none;
+  border: none;
+  background: none;
+  cursor: pointer;
+
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+
+  font-size: 1.15rem;
+  line-height: 1;
+  color: var(--gray);
+
+  &:hover {
+    color: var(--dark);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   トースト（貼った・剥がしたの一言表示）
+   -------------------------------------------------------------------------- */
+
+#bookmark-toast {
+  position: fixed;
+  right: 1rem;
+  bottom: calc(1rem + #{$fab-size} * 2 + 1rem);
+  z-index: 106;
+
+  max-width: 70vw;
+  padding: 0.5rem 0.9rem;
+
+  border-radius: 6px;
+  background: var(--darkgray);
+  color: var(--light);
+
+  font-size: 0.82rem;
+  line-height: 1.5;
+  white-space: nowrap;
+
+  opacity: 0;
+  transform: translateY(0.4rem);
+  pointer-events: none;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+
+  &.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media all and #{$desktop} {
+  body.term-panel-open #bookmark-toast {
+    right: calc(var(--right-col-width) + 1.2rem);
+  }
+}
