@@ -14,4 +14,8 @@ rsync -a --delete \
   "$SRC/" "$SCRIPT_DIR/content/"
 
 cd "$SCRIPT_DIR"
+
+# 用語集から暗記カード（quartz/static/flashcards/index.html）を再生成する
+node quartz/tools/build-flashcards.mjs
+
 npx quartz sync

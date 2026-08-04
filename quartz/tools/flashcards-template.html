@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>暗記カード｜応用情報技術者試験</title>
+<style>
+:root {
+  --bg: #faf8f8;
+  --surface: #ffffff;
+  --border: #e5e5e5;
+  --muted: #b8b8b8;
+  --text: #4e4e4e;
+  --strong: #2b2b2b;
+  --accent: #284b63;
+  --accent-soft: rgba(40, 75, 99, 0.1);
+  --known: #2f7a52;
+  --unknown: #b5622a;
+}
+:root[data-theme="dark"] {
+  --bg: #161618;
+  --surface: #1e1e21;
+  --border: #393639;
+  --muted: #646464;
+  --text: #d4d4d4;
+  --strong: #ebebec;
+  --accent: #7b97aa;
+  --accent-soft: rgba(123, 151, 170, 0.15);
+  --known: #6fbf8f;
+  --unknown: #d9955f;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP",
+               "Yu Gothic", Meiryo, sans-serif;
+  line-height: 1.75;
+  -webkit-text-size-adjust: 100%;
+}
+
+.app {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 3rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ---- ヘッダー ---- */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.cats { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+.cat {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  cursor: pointer;
+  text-decoration: none;
+}
+.cat:hover { border-color: var(--accent); color: var(--accent); }
+.cat[aria-current="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+}
+
+.icon-btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ---- 進捗 ---- */
+.meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 0.4rem;
+}
+.meta strong { color: var(--text); font-weight: 600; }
+
+.bar {
+  height: 4px;
+  background: var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+.bar > i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+  transition: width 0.25s ease;
+}
+
+/* ---- カード ---- */
+main { flex: 1 0 auto; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.75rem 1.5rem;
+  cursor: pointer;
+  min-height: 13rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.25rem;
+}
+.card:hover { border-color: var(--accent); }
+
+.q {
+  font-size: 1.15rem;
+  color: var(--strong);
+  margin: 0;
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+  margin: 0;
+}
+
+.answer {
+  border-top: 1px dashed var(--border);
+  padding-top: 1.25rem;
+  animation: fade 0.18s ease;
+}
+@keyframes fade { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; } }
+
+.term {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin: 0;
+  line-height: 1.4;
+  word-break: break-word;
+}
+.aliases {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0.4rem 0 0;
+}
+
+/* ---- 操作 ---- */
+.controls {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+  flex-wrap: wrap;
+}
+.controls .grow { flex: 1 1 8rem; }
+
+button.act {
+  appearance: none;
+  font: inherit;
+  font-size: 0.95rem;
+  padding: 0.7rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+button.act:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+button.act:disabled { opacity: 0.4; cursor: default; }
+button.act.known { border-color: var(--known); color: var(--known); }
+button.act.unknown { border-color: var(--unknown); color: var(--unknown); }
+
+.sub {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+}
+.link {
+  appearance: none;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0.25rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.link:hover { color: var(--accent); }
+
+/* ---- 結果 ---- */
+.result {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 2rem 1.5rem;
+  text-align: center;
+}
+.result h2 { margin: 0 0 1.25rem; font-size: 1.2rem; color: var(--strong); }
+.score { display: flex; justify-content: center; gap: 2.5rem; margin-bottom: 1.75rem; }
+.score div { font-size: 0.85rem; color: var(--muted); }
+.score b { display: block; font-size: 2rem; line-height: 1.2; }
+.score .k b { color: var(--known); }
+.score .u b { color: var(--unknown); }
+
+.empty { text-align: center; color: var(--muted); padding: 3rem 1rem; }
+
+@media (max-width: 480px) {
+  .card { padding: 1.5rem 1.15rem; min-height: 11rem; }
+  .q { font-size: 1.05rem; }
+  .term { font-size: 1.35rem; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <nav class="cats" id="cats"></nav>
+    <button class="icon-btn" id="theme" type="button" aria-label="テーマ切替">◐</button>
+  </header>
+
+  <div class="meta">
+    <span id="catName"></span>
+    <span><strong id="pos">0</strong> / <span id="total">0</span></span>
+  </div>
+  <div class="bar"><i id="bar"></i></div>
+
+  <main>
+    <div id="stage"></div>
+  </main>
+</div>
+
+<script>
+const CARDS = __CARDS__;
+
+const CATS = [
+  { id: "all",      label: "全部" },
+  { id: "database", label: "データベース" },
+  { id: "network",  label: "ネットワーク" },
+  { id: "security", label: "セキュリティ" },
+];
+
+/* ---------- テーマ ---------- */
+const THEME_KEY = "ap-flashcards-theme";
+function applyTheme(t) {
+  document.documentElement.setAttribute("data-theme", t);
+  try { localStorage.setItem(THEME_KEY, t); } catch (e) {}
+}
+(function initTheme() {
+  let saved = null;
+  try { saved = localStorage.getItem(THEME_KEY); } catch (e) {}
+  if (saved !== "light" && saved !== "dark") {
+    saved = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark" : "light";
+  }
+  applyTheme(saved);
+})();
+document.getElementById("theme").addEventListener("click", () => {
+  applyTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark");
+});
+
+/* ---------- 状態 ---------- */
+/*
+ * カテゴリは URL のハッシュ（#security）で指定する。
+ * Quartz のリンク変換は Markdown 中の相対リンクからクエリ文字列の "?" を落としてしまうため、
+ * クエリではなくハッシュを使う（2026-08-04 ビルド実測で確認）。
+ * 直接 ?cat=... と打たれた場合にも一応対応しておく。
+ */
+function readCat() {
+  const h = decodeURIComponent(location.hash.replace(/^#/, "")).trim();
+  if (CATS.some((c) => c.id === h)) return h;
+  const q = new URLSearchParams(location.search).get("cat");
+  return CATS.some((c) => c.id === q) ? q : "all";
+}
+let cat = readCat();
+
+let deck = [], idx = 0, revealed = false;
+let known = new Set(), unknown = new Set();
+
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function pool() {
+  return cat === "all" ? CARDS.slice() : CARDS.filter((c) => c.cat === cat);
+}
+
+function start(cards) {
+  deck = shuffle(cards.slice());
+  idx = 0;
+  revealed = false;
+  known = new Set();
+  unknown = new Set();
+  render();
+}
+
+/* ---------- 描画 ---------- */
+const stage = document.getElementById("stage");
+
+function renderCats() {
+  const nav = document.getElementById("cats");
+  nav.innerHTML = "";
+  for (const c of CATS) {
+    const n = c.id === "all" ? CARDS.length : CARDS.filter((x) => x.cat === c.id).length;
+    const a = document.createElement("a");
+    a.className = "cat";
+    a.href = "#" + c.id;
+    a.textContent = c.label + " " + n;
+    if (c.id === cat) a.setAttribute("aria-current", "true");
+    nav.appendChild(a);
+  }
+  const cur = CATS.find((c) => c.id === cat);
+  document.getElementById("catName").textContent = cur ? cur.label : "";
+}
+
+function renderProgress() {
+  document.getElementById("pos").textContent = deck.length ? Math.min(idx + 1, deck.length) : 0;
+  document.getElementById("total").textContent = deck.length;
+  const pct = deck.length ? ((idx + (revealed ? 1 : 0)) / deck.length) * 100 : 0;
+  document.getElementById("bar").style.width = Math.min(pct, 100) + "%";
+}
+
+function render() {
+  renderProgress();
+
+  if (!deck.length) {
+    stage.innerHTML = '<p class="empty">このカテゴリにカードがありません。</p>';
+    return;
+  }
+  if (idx >= deck.length) return renderResult();
+
+  const c = deck[idx];
+  stage.innerHTML = "";
+
+  const card = document.createElement("div");
+  card.className = "card";
+  card.id = "card";
+
+  const q = document.createElement("p");
+  q.className = "q";
+  q.textContent = c.q;
+  card.appendChild(q);
+
+  if (revealed) {
+    const ans = document.createElement("div");
+    ans.className = "answer";
+    const term = document.createElement("p");
+    term.className = "term";
+    term.textContent = c.a;
+    ans.appendChild(term);
+    if (c.aliases && c.aliases.length) {
+      const al = document.createElement("p");
+      al.className = "aliases";
+      al.textContent = "別名：" + c.aliases.join("／");
+      ans.appendChild(al);
+    }
+    card.appendChild(ans);
+  } else {
+    const hint = document.createElement("p");
+    hint.className = "hint";
+    hint.textContent = "タップして答えを見る";
+    card.appendChild(hint);
+  }
+
+  card.addEventListener("click", () => {
+    if (!revealed) { revealed = true; render(); }
+  });
+  stage.appendChild(card);
+
+  /* 操作ボタン */
+  const ctr = document.createElement("div");
+  ctr.className = "controls";
+
+  if (!revealed) {
+    const b = document.createElement("button");
+    b.className = "act grow";
+    b.id = "reveal";
+    b.type = "button";
+    b.textContent = "答えを見る";
+    b.addEventListener("click", () => { revealed = true; render(); });
+    ctr.appendChild(b);
+  } else {
+    const bu = document.createElement("button");
+    bu.className = "act unknown grow";
+    bu.id = "mark-unknown";
+    bu.type = "button";
+    bu.textContent = "まだ";
+    bu.addEventListener("click", () => mark(false));
+    ctr.appendChild(bu);
+
+    const bk = document.createElement("button");
+    bk.className = "act known grow";
+    bk.id = "mark-known";
+    bk.type = "button";
+    bk.textContent = "覚えた";
+    bk.addEventListener("click", () => mark(true));
+    ctr.appendChild(bk);
+  }
+  stage.appendChild(ctr);
+
+  /* 補助操作 */
+  const sub = document.createElement("div");
+  sub.className = "sub";
+
+  const back = document.createElement("button");
+  back.className = "link";
+  back.id = "prev";
+  back.type = "button";
+  back.textContent = "← 前のカード";
+  back.disabled = idx === 0;
+  back.style.visibility = idx === 0 ? "hidden" : "visible";
+  back.addEventListener("click", () => { idx--; revealed = false; render(); });
+  sub.appendChild(back);
+
+  const sh = document.createElement("button");
+  sh.className = "link";
+  sh.id = "shuffle";
+  sh.type = "button";
+  sh.textContent = "シャッフルして最初から";
+  sh.addEventListener("click", () => start(pool()));
+  sub.appendChild(sh);
+
+  stage.appendChild(sub);
+}
+
+function mark(ok) {
+  const c = deck[idx];
+  (ok ? known : unknown).add(c.a);
+  (ok ? unknown : known).delete(c.a);
+  idx++;
+  revealed = false;
+  render();
+}
+
+function renderResult() {
+  document.getElementById("bar").style.width = "100%";
+  stage.innerHTML = "";
+
+  const box = document.createElement("div");
+  box.className = "result";
+  box.id = "result";
+
+  const h = document.createElement("h2");
+  h.textContent = "1周おつかれさまでした";
+  box.appendChild(h);
+
+  const sc = document.createElement("div");
+  sc.className = "score";
+  sc.innerHTML =
+    '<div class="k"><b id="cnt-known">' + known.size + "</b>覚えた</div>" +
+    '<div class="u"><b id="cnt-unknown">' + unknown.size + "</b>まだ</div>";
+  box.appendChild(sc);
+
+  const ctr = document.createElement("div");
+  ctr.className = "controls";
+
+  if (unknown.size) {
+    const again = document.createElement("button");
+    again.className = "act unknown grow";
+    again.id = "retry-unknown";
+    again.type = "button";
+    again.textContent = "「まだ」の " + unknown.size + " 枚をもう一度";
+    again.addEventListener("click", () => {
+      start(CARDS.filter((c) => unknown.has(c.a)));
+    });
+    ctr.appendChild(again);
+  }
+
+  const all = document.createElement("button");
+  all.className = "act grow";
+  all.id = "retry-all";
+  all.type = "button";
+  all.textContent = "最初から";
+  all.addEventListener("click", () => start(pool()));
+  ctr.appendChild(all);
+
+  box.appendChild(ctr);
+  stage.appendChild(box);
+}
+
+/* ---------- キーボード ---------- */
+document.addEventListener("keydown", (e) => {
+  if (idx >= deck.length) return;
+  if (e.key === " " || e.key === "Enter") {
+    e.preventDefault();
+    if (!revealed) { revealed = true; render(); }
+  } else if (revealed && (e.key === "1" || e.key === "j")) {
+    mark(true);
+  } else if (revealed && (e.key === "2" || e.key === "f")) {
+    mark(false);
+  } else if (e.key === "ArrowLeft" && idx > 0) {
+    idx--; revealed = false; render();
+  }
+});
+
+/* ---------- ハッシュでのカテゴリ切替 ---------- */
+window.addEventListener("hashchange", () => {
+  const next = readCat();
+  if (next === cat) return;
+  cat = next;
+  renderCats();
+  start(pool());
+});
+
+/* ---------- 起動 ---------- */
+renderCats();
+start(pool());
+</script>
+</body>
+</html>
