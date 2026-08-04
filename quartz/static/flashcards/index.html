@@ -247,6 +247,18 @@ button.act.unknown { border-color: var(--unknown); color: var(--unknown); }
   .q { font-size: 1.05rem; }
   .term { font-size: 1.35rem; }
 }
+
+/* ---- 埋め込みモード ----
+   Quartzのカテゴリページ（暗記カード/11_セキュリティ 等）が、このHTMLをiframeで読み込む。
+   カテゴリは親サイドバーで、テーマは親のトグルで選ぶので、自前のヘッダーは隠す。
+   背景を透明にして親ページの地色に載せる。 */
+html.embed, html.embed body { background: transparent; }
+html.embed header { display: none; }
+html.embed .app {
+  min-height: 0;
+  max-width: none;
+  padding: 0 0 0.25rem;
+}
 </style>
 </head>
 <body>
@@ -277,15 +289,52 @@ const CATS = [
   { id: "security", label: "セキュリティ" },
 ];
 
+/* ---------- 埋め込みモード ---------- */
+/*
+ * Quartzのカテゴリページはこのファイルを同一オリジンのiframeで読み込む。
+ * その場合はヘッダーを隠し、テーマは親ページ（Quartz）に追従させる。
+ */
+const EMBED = window.self !== window.top;
+if (EMBED) document.documentElement.classList.add("embed");
+
+/* 中身の高さにiframe自体を合わせる（同一オリジンなので frameElement を触れる）。
+   固定高だと問題文の長短や結果画面で余白・スクロールが出るため。 */
+function fitEmbed() {
+  if (!EMBED) return;
+  try {
+    const h = document.querySelector(".app").getBoundingClientRect().height;
+    if (h > 0) window.frameElement.style.height = Math.ceil(h) + "px";
+  } catch (e) {} // 別オリジンなら諦めてCSSの高さのままにする
+}
+
 /* ---------- テーマ ---------- */
 const THEME_KEY = "ap-flashcards-theme";
 function applyTheme(t) {
   document.documentElement.setAttribute("data-theme", t);
-  try { localStorage.setItem(THEME_KEY, t); } catch (e) {}
+  // 埋め込み時は親に従うだけなので、全画面表示側の選択を上書きしない
+  if (!EMBED) { try { localStorage.setItem(THEME_KEY, t); } catch (e) {} }
+}
+/*
+ * 親（Quartz）が選んでいるテーマを読む。
+ * Quartz v5 のテーマトグルは :root に saved-theme を付ける（2026-08-04 実測）。
+ * data-theme も見るのは、将来Quartz側の属性名が変わった場合の保険。
+ */
+function parentTheme() {
+  try {
+    const root = window.parent.document.documentElement;
+    const t = root.getAttribute("saved-theme") || root.getAttribute("data-theme");
+    return t === "light" || t === "dark" ? t : null;
+  } catch (e) {
+    return null; // 別オリジンに埋め込まれた場合
+  }
 }
 (function initTheme() {
   let saved = null;
-  try { saved = localStorage.getItem(THEME_KEY); } catch (e) {}
+  if (EMBED) {
+    saved = parentTheme();
+  } else {
+    try { saved = localStorage.getItem(THEME_KEY); } catch (e) {}
+  }
   if (saved !== "light" && saved !== "dark") {
     saved = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
       ? "dark" : "light";
@@ -295,6 +344,18 @@ function applyTheme(t) {
 document.getElementById("theme").addEventListener("click", () => {
   applyTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark");
 });
+/* 親でテーマが切り替わったら追従する（イベント名に依存しないよう属性を直接監視する） */
+if (EMBED) {
+  try {
+    new MutationObserver(() => {
+      const t = parentTheme();
+      if (t) applyTheme(t);
+    }).observe(window.parent.document.documentElement, {
+      attributes: true,
+      attributeFilter: ["saved-theme", "data-theme"],
+    });
+  } catch (e) {}
+}
 
 /* ---------- 状態 ---------- */
 /*
@@ -546,6 +607,12 @@ window.addEventListener("hashchange", () => {
 /* ---------- 起動 ---------- */
 renderCats();
 start(pool());
+
+/* 描画のたびに高さを合わせ直す（カードの行数や結果画面で変わるため） */
+if (EMBED) {
+  new ResizeObserver(fitEmbed).observe(document.querySelector(".app"));
+  fitEmbed();
+}
 </script>
 </body>
 </html>
