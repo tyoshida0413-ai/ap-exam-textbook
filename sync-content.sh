@@ -9,6 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 rsync -a --delete \
   --exclude='.claude' \
+  --exclude='CLAUDE.md' \
   --exclude='*.bak-*' \
   --exclude='.DS_Store' \
   "$SRC/" "$SCRIPT_DIR/content/"
