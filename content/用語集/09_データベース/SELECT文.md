@@ -29,4 +29,4 @@ SELECT 氏名, 給与 FROM 社員表 WHERE 給与 >= 300 ORDER BY 給与 DESC;
 
 [[GROUP BY句]] ／ [[HAVING句]] ／ [[DDL・DML・DCL]]
 
-教科書：[[09_データベース]] の 3.2 節
+教科書：[[教科書/09_データベース|09_データベース]] の 3.2 節
