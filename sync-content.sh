@@ -11,6 +11,7 @@ rsync -a --delete \
   --exclude='.claude' \
   --exclude='CLAUDE.md' \
   --exclude='*.bak-*' \
+  --exclude='*.bak_*' \
   --exclude='.DS_Store' \
   "$SRC/" "$SCRIPT_DIR/content/"
 
