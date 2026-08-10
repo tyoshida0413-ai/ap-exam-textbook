@@ -2,7 +2,7 @@
 /**
  * 用語集Markdown → 暗記カード（自己完結HTML）を生成する。
  *
- * 入力: content/用語集/{09_データベース,10_ネットワーク,11_セキュリティ}/*.md
+ * 入力: content/用語集/{09_データベース,10_ネットワーク,11_セキュリティ,15_サービスマネジメント・監査}/*.md
  * 出力: quartz/static/flashcards/index.html
  *
  * 各Markdownの「H1見出しの直後にあるblockquote」を問題文、frontmatterの title を答えとする。
@@ -28,6 +28,7 @@ const CATEGORIES = {
   "09_データベース": "database",
   "10_ネットワーク": "network",
   "11_セキュリティ": "security",
+  "15_サービスマネジメント・監査": "service",
 }
 
 /**
